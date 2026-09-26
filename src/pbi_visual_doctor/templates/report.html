@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power BI Visual Health</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1c2330; --muted: #5d6778; --line: #e2e6ec;
+    --bad: #c2362f; --bad-bg: #fbeceb; --warn: #9a6100; --warn-bg: #fdf3e0;
+    --ok: #1f7a4d; --ok-bg: #e7f4ec; --accent: #3452b4; --bar: #3452b4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --panel: #1a1f27; --ink: #e6e9ef; --muted: #9aa3b2; --line: #2b323d;
+      --bad: #ff7b72; --bad-bg: #3a1d1c; --warn: #f0b54a; --warn-bg: #3a2c12;
+      --ok: #5cc98f; --ok-bg: #173226; --accent: #8ea6ff; --bar: #8ea6ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 36px 0 12px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 24px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .tile .n { font-size: 26px; font-weight: 650; }
+  .tile .l { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .tile.bad .n { color: var(--bad); } .tile.ok .n { color: var(--ok); } .tile.warn .n { color: var(--warn); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .bar-row { display: grid; grid-template-columns: 170px 1fr 40px; gap: 10px; align-items: center; margin: 6px 0; }
+  .bar { height: 10px; border-radius: 5px; background: var(--bar); }
+  .bar-track { background: var(--line); border-radius: 5px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+  .tag.bad { background: var(--bad-bg); color: var(--bad); }
+  .tag.warn { background: var(--warn-bg); color: var(--warn); }
+  .tag.ok { background: var(--ok-bg); color: var(--ok); }
+  .tag.plain { border: 1px solid var(--line); color: var(--muted); }
+  .msg { color: var(--muted); font-size: 12.5px; white-space: pre-wrap; word-break: break-word; max-width: 520px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
+  details.report { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; }
+  details.report > summary { cursor: pointer; padding: 12px 16px; display: flex; gap: 12px; align-items: center; list-style: none; }
+  details.report > summary::-webkit-details-marker { display: none; }
+  details.report > summary .name { font-weight: 600; flex: 1; }
+  details.report .body { padding: 0 16px 16px; }
+  .page-head { margin: 14px 0 6px; font-weight: 600; display: flex; gap: 10px; align-items: center; }
+  .page-head a { color: var(--accent); font-weight: 400; font-size: 12.5px; }
+  input[type=search] { width: 100%; max-width: 360px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+  .empty { color: var(--muted); padding: 8px 0; }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Power BI Visual Health</h1>
+  <div class="meta">
+    Scanned {{ meta.started_at or "-" }} to {{ meta.finished_at or "-" }} UTC.
+    Triage backend: <strong>{{ meta.backend }}</strong>{% if meta.models %} ({{ meta.models | join(", ") }}){% endif %}.
+  </div>
+
+  {% set t = s.totals %}
+  <div class="tiles">
+    <div class="tile"><div class="n">{{ t.reports }}</div><div class="l">Reports</div></div>
+    <div class="tile"><div class="n">{{ t.pages }}</div><div class="l">Pages</div></div>
+    <div class="tile"><div class="n">{{ t.visuals }}</div><div class="l">Visuals checked</div></div>
+    <div class="tile {{ 'bad' if t.broken else 'ok' }}"><div class="n">{{ t.broken }}</div><div class="l">Broken visuals</div></div>
+    <div class="tile"><div class="n">{{ t.reports_affected }}</div><div class="l">Reports affected</div></div>
+    <div class="tile {{ 'warn' if t.needs_review else '' }}"><div class="n">{{ t.needs_review }}</div><div class="l">Need human review</div></div>
+    <div class="tile {{ 'warn' if t.page_errors else '' }}"><div class="n">{{ t.page_errors }}</div><div class="l">Pages not scanned</div></div>
+  </div>
+  {% if t.cleared %}
+  <p class="note">{{ t.cleared }} blank or empty {{ "visual was" if t.cleared == 1 else "visuals were" }} checked and judged legitimately empty; listed per page but not counted as broken.</p>
+  {% endif %}
+
+  <h2>Top fixes</h2>
+  {% if s.top_fixes %}
+  <div class="panel">
+    <table>
+      <thead><tr><th>Fix</th><th>Cause</th><th>Owner</th><th>Visuals</th><th>Reports</th><th>Where</th></tr></thead>
+      <tbody>
+      {% for fx in s.top_fixes[:15] %}
+        <tr>
+          <td>
+            {% if fx.names %}<code>{{ fx.names | join(", ") }}</code><br>{% endif %}
+            <div class="msg">{{ fx.sample }}</div>
+          </td>
+          <td><span class="tag bad">{{ fx.category_label }}</span></td>
+          <td>{{ fx.owner }}</td>
+          <td><strong>{{ fx.visuals }}</strong></td>
+          <td>{{ fx.reports }}</td>
+          <td class="msg">{{ fx.where | join("\n") }}{% if fx.pages > fx.where | length %}
+...and {{ fx.pages - fx.where | length }} more pages{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="panel empty">No broken visuals found.</div>
+  {% endif %}
+
+  {% if s.by_category %}
+  <div class="cols">
+    <div>
+      <h2>By root cause</h2>
+      <div class="panel">
+        {% set maxc = s.by_category[0].count %}
+        {% for c in s.by_category %}
+        <div class="bar-row"><span>{{ c.label }}</span><div class="bar-track"><div class="bar" style="width: {{ (100 * c.count / maxc) | round(1) }}%"></div></div><strong>{{ c.count }}</strong></div>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
+      <h2>By owner</h2>
+      <div class="panel">
+        {% set maxo = s.by_owner[0].count %}
+        {% for o in s.by_owner %}
+        <div class="bar-row"><span>{{ o.label }}</span><div class="bar-track"><div class="bar" style="width: {{ (100 * o.count / maxo) | round(1) }}%"></div></div><strong>{{ o.count }}</strong></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <h2>By report</h2>
+  <input type="search" id="filter" placeholder="Filter by report, page, visual or message">
+  <div id="reports">
+  {% for r in s.reports %}
+    <details class="report" {% if r.broken %}open{% endif %} data-search="{{ r.name | lower }}">
+      <summary>
+        <span class="name">{{ r.name }}</span>
+        {% if r.broken %}<span class="tag bad">{{ r.broken }} broken</span>{% else %}<span class="tag ok">healthy</span>{% endif %}
+        <span class="tag plain">{{ r.pages | length }} pages, {{ r.visuals }} visuals</span>
+      </summary>
+      <div class="body">
+      {% for p in r.pages %}
+        <div class="page-head">
+          {{ p.name }}
+          {% if p.broken %}<span class="tag bad">{{ p.broken }} broken</span>{% else %}<span class="tag ok">{{ p.ok }} ok</span>{% endif %}
+          {% if p.url and not p.url.startswith("file:") %}<a href="{{ p.url }}" target="_blank" rel="noopener">open page</a>{% endif %}
+        </div>
+        {% if p.findings %}
+        <table>
+          <thead><tr><th>Visual</th><th>Status</th><th>Cause</th><th>Owner</th><th>Severity</th><th>Message</th></tr></thead>
+          <tbody>
+          {% for f in p.findings %}
+            {% set tr = f.triage %}
+            <tr class="finding" data-search="{{ (r.name ~ ' ' ~ p.name ~ ' ' ~ f.visual.title ~ ' ' ~ f.visual.error_text ~ ' ' ~ f.visual.details_text) | lower }}">
+              <td>{{ f.visual.title or "(untitled)" }}<br><span class="msg">#{{ f.visual.visual_index }}{% if f.visual.visual_type %} {{ f.visual.visual_type }}{% endif %}</span></td>
+              <td>
+                {% if f.is_confirmed_broken %}<span class="tag bad">{{ f.visual.status }}</span>{% else %}<span class="tag ok">empty, ok</span>{% endif %}
+                {% if tr and tr.broken_probability is not none %}<br><span class="msg">p(broken) {{ "%.2f" | format(tr.broken_probability) }}</span>{% endif %}
+              </td>
+              <td>
+                {% if tr %}{{ CATEGORY_LABELS.get(tr.category, tr.category) }}<br><span class="msg">conf {{ "%.2f" | format(tr.category_confidence) }}{% if tr.category_confidence < s.review_threshold %} - review{% endif %}</span>{% else %}<span class="tag warn">untriaged</span>{% endif %}
+              </td>
+              <td>{{ OWNER_LABELS.get(tr.owner, tr.owner) if tr else "-" }}</td>
+              <td>{{ tr.severity_label if tr else "-" }}</td>
+              <td class="msg">{{ (f.visual.details_text or f.visual.error_text)[:400] }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      {% endfor %}
+      </div>
+    </details>
+  {% endfor %}
+  </div>
+
+  {% if s.page_errors %}
+  <h2>Pages that could not be scanned</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Report</th><th>Page</th><th>Problem</th></tr></thead>
+      <tbody>
+      {% for e in s.page_errors %}
+        <tr><td>{{ e.report }}</td><td>{{ e.page }}</td><td class="msg">{{ e.error }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <p class="note">Causes, owners and severities are model predictions from the visual's error text, not verified diagnoses.
+  Items below {{ s.review_threshold }} confidence are marked for review. Visuals that render but show wrong numbers are not detected.
+  Generated by pbi-visual-doctor at {{ meta.generated_at }} UTC.</p>
+</main>
+<script>
+  const box = document.getElementById('filter');
+  box.addEventListener('input', () => {
+    const q = box.value.trim().toLowerCase();
+    document.querySelectorAll('details.report').forEach(d => {
+      let any = !q || d.dataset.search.includes(q);
+      d.querySelectorAll('tr.finding').forEach(tr => {
+        const hit = !q || tr.dataset.search.includes(q) || d.dataset.search.includes(q);
+        tr.style.display = hit ? '' : 'none';
+        if (hit) any = true;
+      });
+      d.style.display = any ? '' : 'none';
+      if (q && any) d.open = true;
+    });
+  });
+</script>
+</body>
+</html>

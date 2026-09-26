@@ -1,0 +1,95 @@
+# Default settings for pbi-visual-doctor.
+#
+# Power BI's page structure is not a documented API and changes over time.
+# Every selector below is a list of candidates tried in order; if Microsoft
+# changes the markup, override the list in your own config file
+# (pbi-doctor scan --config my-config.yaml) instead of editing code.
+
+selectors:
+  # One element per visual on the report canvas.
+  visual_container:
+    - "visual-container"
+    - ".visual-container"
+    - "[data-testid='visual-container']"
+    - ".visualContainerHost .visualContainer"
+  # Title text inside a visual container.
+  visual_title:
+    - ".visualTitle"
+    - "[data-testid='visual-title']"
+    - ".visual-title"
+  # Loading indicators; a visual still showing one after render_max_wait_ms
+  # is reported as a timeout.
+  spinner:
+    - ".powerbi-spinner"
+    - ".spinner"
+    - ".visual-loading"
+    - "[aria-busy='true']"
+  # Attribute that holds the visual type, if present.
+  visual_type_attr:
+    - "data-visual-type"
+    - "data-visualtype"
+  # Text of the link or button that opens the full error message.
+  details_button_text:
+    - "See details"
+    - "Show details"
+  # Dialog that shows the error details.
+  dialog:
+    - "[role='dialog']"
+    - ".mat-mdc-dialog-container"
+    - ".modal-dialog"
+  # Page tabs, used when a report's pages are not listed explicitly.
+  page_tabs:
+    - "[data-testid='pages-navigation-list-items']"
+    - ".pages-navigation .page-item"
+    - "[role='tab']"
+
+phrases:
+  # Any of these (case-insensitive) in a visual's text marks it as an error.
+  error:
+    - "Can't display this visual"
+    - "Cannot display this visual"
+    - "Something went wrong"
+    - "Something's wrong with one or more fields"
+    - "Couldn't load the data"
+    - "Couldn't retrieve the data"
+    - "Couldn't load the visual"
+    - "Unable to load"
+    - "Error fetching data"
+    - "exceeded the available resources"
+    - "Too many values"
+    - "Fix this"
+  # Any of these marks a visual as blank (possibly broken, possibly just
+  # empty for the current filters; the model decides).
+  blank:
+    - "(Blank)"
+    - "No data available"
+    - "No data"
+  # Lines in the details dialog that are UI chrome, not the error itself.
+  dialog_chrome:
+    - "Error details"
+    - "Close"
+    - "OK"
+    - "Copy details"
+    - "Copy details to clipboard"
+    - "See details"
+  # Visuals whose type or title matches these are never checked
+  # (decorative shapes, images, text boxes, buttons).
+  ignore_types:
+    - "shape"
+    - "image"
+    - "textbox"
+    - "actionButton"
+    - "basicShape"
+
+timing:
+  page_load_timeout_ms: 60000
+  render_settle_ms: 3000     # visual count must be stable for this long
+  render_max_wait_ms: 45000  # after this, anything still loading is a timeout
+  details_timeout_ms: 5000
+  concurrency: 3             # pages scanned in parallel
+
+triage:
+  # Visuals with confidence below this are flagged for human review.
+  review_threshold: 0.6
+  # Maximum characters of error text sent to the model.
+  max_text_chars: 1500

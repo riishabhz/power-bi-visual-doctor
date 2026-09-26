@@ -1,0 +1,38 @@
+# Starting point for a nightly scan. Copy to .github/workflows/ in a PRIVATE
+# repo that holds your targets.yaml. Store secrets in the repo settings:
+#   PBI_STORAGE_STATE  - contents of .auth/state.json from 'pbi-doctor login'
+#   PBI_ACCESS_TOKEN   - optional, to discover reports and pages
+#   TYPESAFE_API_KEY   - if you use the Jev backend
+# Saved browser sessions expire; refresh the secret when scans report sign-in redirects.
+name: Nightly Power BI visual scan
+
+on:
+  schedule:
+    - cron: "17 5 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install git+https://github.com/<you>/pbi-visual-doctor
+      - run: playwright install --with-deps chromium
+      - name: Restore session
+        run: |
+          mkdir -p .auth
+          echo '${{ secrets.PBI_STORAGE_STATE }}' > .auth/state.json
+      - name: Scan
+        env:
+          PBI_ACCESS_TOKEN: ${{ secrets.PBI_ACCESS_TOKEN }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: pbi-doctor scan --targets targets.yaml --backend jev --fail-on-broken
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pbi-visual-health
+          path: pbi-doctor-report/

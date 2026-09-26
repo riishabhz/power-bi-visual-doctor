@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+
+# Saved browser sessions grant access to your Power BI account.
+.auth/
+
+# Scan output can contain report names, field names and error details.
+pbi-doctor-report/
+pbi-doctor-demo/
+/targets.yaml
+.env

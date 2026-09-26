@@ -1,0 +1,18 @@
+# Example overrides. Anything not set here falls back to
+# src/pbi_visual_doctor/defaults.yaml. Pass with: pbi-doctor scan --config my-config.yaml
+
+phrases:
+  error:
+    - "Can't display this visual"
+    - "Something went wrong"
+    - "Something's wrong with one or more fields"
+    - "Couldn't load the data"
+    - "Couldn't retrieve the data"
+    - "exceeded the available resources"
+
+timing:
+  render_max_wait_ms: 60000   # slow DirectQuery pages
+  concurrency: 4
+
+triage:
+  review_threshold: 0.7

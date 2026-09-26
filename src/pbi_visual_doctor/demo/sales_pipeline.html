@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Sales Overview - Power BI (demo)</title>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; background: #eaeaea; margin: 0; }
+  header { background: #252423; color: #fff; padding: 10px 16px; font-size: 14px; }
+  .banner { background: #fff4ce; color: #5c4400; padding: 6px 16px; font-size: 12px; }
+  .tabs { display: flex; gap: 4px; padding: 8px 16px 0; }
+  .tabs [role=tab] { background: #fff; border: 1px solid #ccc; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+  .tabs [role=tab][aria-selected=true] { border-bottom-color: #fff; font-weight: 600; }
+  .canvas { display: grid; grid-template-columns: repeat(3, 360px); gap: 14px; padding: 16px; }
+  visual-container { display: block; background: #fff; height: 220px; padding: 10px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .visualTitle { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .card-value { font-size: 40px; text-align: center; margin-top: 40px; }
+  .err { color: #605e5c; font-size: 13px; text-align: center; margin-top: 40px; }
+  .err a { color: #0078d4; cursor: pointer; text-decoration: underline; }
+  .powerbi-spinner { width: 28px; height: 28px; margin: 60px auto; border: 3px solid #ddd; border-top-color: #f2c811; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  [role=dialog] { position: fixed; top: 30%; left: 30%; width: 40%; background: #fff; border: 1px solid #999; padding: 18px; box-shadow: 0 8px 30px rgba(0,0,0,.3); font-size: 13px; }
+  .hidden { display: none !important; }
+  table { font-size: 12px; border-collapse: collapse; width: 100%; }
+  td, th { border-bottom: 1px solid #eee; padding: 3px 4px; text-align: left; }
+</style>
+</head>
+<body>
+<header>Power BI (demo markup) - Sales Overview</header>
+<div class="banner">Demo page for pbi-visual-doctor. This imitates Power BI's report markup; it is not Power BI.</div>
+
+<div id="app"></div>
+<template id="page-content"><div class="canvas"><visual-container data-visual-type="clusteredColumnChart" aria-label="Pipeline by Stage"><div class="visualTitle">Pipeline by Stage</div><svg width="330" height="150"><rect x="10" y="30" width="60" height="110" fill="#118dff"/><rect x="90" y="60" width="60" height="80" fill="#118dff"/><rect x="170" y="10" width="60" height="130" fill="#118dff"/><rect x="250" y="80" width="60" height="60" fill="#118dff"/></svg></visual-container><visual-container data-visual-type="clusteredBarChart" aria-label="Revenue by Region"><div class="visualTitle">Revenue by Region</div><div class="err">Something's wrong with one or more fields.<br><a data-details="Couldn't load the data for this visual. The field 'Total Revenue' in table 'Sales' doesn't exist or you don't have access to it. It may have been renamed or deleted. Activity ID: 3f1c2a9e-8b77-4c1e-9d0a-5e6f7a8b9c0d">See details</a></div></visual-container><visual-container data-visual-type="card" aria-label="Total Revenue KPI"><div class="visualTitle">Total Revenue KPI</div><div class="card-value">(Blank)</div></visual-container><visual-container data-visual-type="card" aria-label="Open Quotes"><div class="visualTitle">Open Quotes</div><div class="card-value">1,284</div></visual-container><visual-container data-visual-type="lineChart" aria-label="Leads by Source"><div class="visualTitle">Leads by Source</div><svg width="330" height="150"><polyline points="10,120 70,90 130,100 190,50 250,60 310,20" fill="none" stroke="#118dff" stroke-width="3"/></svg></visual-container><visual-container data-visual-type="shape" aria-label="Decorative shape"></visual-container></div></template>
+<div id="dialog" role="dialog" class="hidden"><strong>Error details</strong><p class="text"></p><button onclick="this.parentElement.classList.add('hidden')">Close</button></div>
+
+<script>
+  // Visuals render a moment after load, like the real service.
+  const tpl = document.getElementById('page-content');
+  setTimeout(() => { document.getElementById('app').innerHTML = tpl.innerHTML; wire(); }, 400);
+  function wire() {
+    document.querySelectorAll('[data-details]').forEach(a => a.addEventListener('click', () => {
+      const d = document.getElementById('dialog');
+      d.querySelector('.text').textContent = a.getAttribute('data-details');
+      d.classList.remove('hidden');
+    }));
+    document.querySelectorAll('[role=tab]').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('[role=tab]').forEach(x => x.setAttribute('aria-selected', 'false'));
+      t.setAttribute('aria-selected', 'true');
+      document.querySelectorAll('.canvas').forEach(c => c.classList.add('hidden'));
+      document.getElementById(t.getAttribute('data-panel')).classList.remove('hidden');
+    }));
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('dialog').classList.add('hidden'); });
+</script>
+
+</body></html>

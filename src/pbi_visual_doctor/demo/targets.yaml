@@ -1,0 +1,19 @@
+# Demo targets. Relative paths are resolved against this file.
+reports:
+  - name: Sales Overview
+    url: sales_pipeline.html
+    pages:
+      - name: Pipeline
+        url: sales_pipeline.html
+      - name: Bookings
+        url: sales_bookings.html
+  # No pages listed: the crawler discovers them by clicking the page tabs.
+  - name: Guest Experience
+    url: guest_experience.html
+  - name: Finance
+    url: finance_pnl.html
+    pages:
+      - name: P&L
+        url: finance_pnl.html
+      - name: Forecast
+        url: finance_forecast_missing.html

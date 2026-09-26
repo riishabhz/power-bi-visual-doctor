@@ -28,17 +28,42 @@ EXTRACT_JS = r"""
       if (found.length) { containers = found; break; }
     } catch (e) {}
   }
+  // Idle spinners stay in the DOM with no size or display:none; only count drawn ones.
+  const shown = el => {
+    const b = el.getBoundingClientRect();
+    return b.width > 0 && b.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+  };
+  const firstShown = (root, sels) => {
+    for (const s of sels) {
+      try { const el = Array.from(root.querySelectorAll(s)).find(shown); if (el) return el; } catch (e) {}
+    }
+    return null;
+  };
   containers = containers.filter(c => !containers.some(o => o !== c && o.contains(c)));
   return containers.map((c, i) => {
     c.setAttribute('data-pbid-idx', String(i));
-    const r = c.getBoundingClientRect();
+    // The Power BI service renders <visual-container> inline with a 0x0 box;
+    // the size is on its children.
+    let r = c.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) {
+      for (const child of Array.from(c.children)) {
+        const b = child.getBoundingClientRect();
+        if (b.width * b.height > r.width * r.height) r = b;
+      }
+    }
     const titleEl = first(c, cfg.visual_title);
     let vtype = '';
     for (const a of cfg.visual_type_attr) {
       const holder = c.hasAttribute(a) ? c : c.querySelector('[' + a + ']');
       if (holder) { vtype = holder.getAttribute(a) || ''; break; }
     }
-    const spinner = !!first(c, cfg.spinner) || c.getAttribute('aria-busy') === 'true';
+    if (!vtype) {
+      // The service marks the type as a class, e.g. <div class="visual visual-barChart">.
+      const v = c.querySelector('.visual[class*="visual-"]');
+      const cls = v ? Array.from(v.classList).find(k => k.startsWith('visual-')) : null;
+      if (cls) vtype = cls.slice('visual-'.length);
+    }
+    const spinner = !!firstShown(c, cfg.spinner) || c.getAttribute('aria-busy') === 'true';
     const graphics = Array.from(c.querySelectorAll('svg, canvas, img')).filter(g => {
       const b = g.getBoundingClientRect(); return b.width > 4 && b.height > 4;
     }).length;
@@ -110,8 +135,10 @@ class Crawler:
         storage_state: Optional[str] = None,
         headed: bool = False,
         progress: Callable[[str], None] = print,
+        include_hidden: bool = False,
     ) -> None:
         self.cfg = cfg
+        self.include_hidden = include_hidden
         self.sel = cfg["selectors"]
         self.timing = cfg["timing"]
         self.storage_state = storage_state
@@ -215,8 +242,18 @@ class Crawler:
                 return text
         return ""
 
-    async def _collect(self, page: Page, report: str, page_name: str, url: str) -> None:
+    async def _is_hidden_page(self, page: Page, page_name: str) -> bool:
+        """A page opened by URL that is missing from the page tabs is hidden in the report."""
+        tabs: list[str] = await page.evaluate(TABS_JS, self.sel["page_tabs"])
+        names = {t.strip().lower() for t in tabs}
+        return bool(names) and page_name.strip().lower() not in names
+
+    async def _collect(self, page: Page, report: str, page_name: str, url: str, check_hidden: bool = False) -> None:
         raw, timed_out = await self._wait_for_render(page)
+        hidden = check_hidden and await self._is_hidden_page(page, page_name)
+        if hidden and not self.include_hidden:
+            self.progress(f"  - {report} / {page_name}: skipped (hidden page)")
+            return
         if not raw:
             self._page_error(report, page_name, url, "No visuals found (check selectors or permissions).")
             return
@@ -236,6 +273,7 @@ class Crawler:
                 error_text=error_text,
                 aria_label=item.get("aria_label", ""),
                 text_sample=(item.get("text") or "")[:500],
+                page_hidden=hidden,
             )
             if status == ERROR:
                 record.details_text = detect.clean_details(
@@ -243,7 +281,8 @@ class Crawler:
                 )
             counts["ok" if status == OK else "problem"] += 1
             self.result.visuals.append(record)
-        self.progress(f"  - {report} / {page_name}: {counts['ok']} ok, {counts['problem']} to triage")
+        note = " (hidden page)" if hidden else ""
+        self.progress(f"  - {report} / {page_name}{note}: {counts['ok']} ok, {counts['problem']} to triage")
 
     # ------------------------------------------------------------ page modes
     async def _scan_page_job(self, context: BrowserContext, job: PageJob) -> None:
@@ -253,7 +292,7 @@ class Crawler:
             self._page_error(job.report_name, job.page_name, job.url, str(exc).splitlines()[0])
             return
         try:
-            await self._collect(page, job.report_name, job.page_name, job.url)
+            await self._collect(page, job.report_name, job.page_name, job.url, check_hidden=True)
         except Exception as exc:
             self._page_error(job.report_name, job.page_name, job.url, str(exc).splitlines()[0])
         finally:
@@ -292,5 +331,6 @@ async def crawl(
     storage_state: Optional[str] = None,
     headed: bool = False,
     progress: Callable[[str], None] = print,
+    include_hidden: bool = False,
 ) -> ScanResult:
-    return await Crawler(cfg, storage_state, headed, progress).crawl(reports)
+    return await Crawler(cfg, storage_state, headed, progress, include_hidden).crawl(reports)

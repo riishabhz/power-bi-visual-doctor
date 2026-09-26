@@ -160,6 +160,7 @@ class RulesBackend:
 
     # Order matters: the first matching category wins.
     KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
+        ("tenant_setting", ("enabled for your org", "tenant admin", "tenant setting", "disabled by your admin")),
         ("missing_field", ("can't find", "cannot find", "doesn't exist", "does not exist", "renamed or deleted", "one or more fields")),
         ("permissions", ("don't have permission", "do not have permission", "not authorized", "unauthorized", "access denied", "row-level", "sensitivity label", "build permission")),
         ("credentials_gateway", ("credential", "gateway", "sign in to the data source", "data source", "odbc", "oauth", "token expired", "directquery")),
@@ -180,6 +181,7 @@ class RulesBackend:
         "credentials_gateway": "platform_admin",
         "resource_limit": "model_owner",
         "custom_visual": "report_author",
+        "tenant_setting": "platform_admin",
         "not_broken": "report_author",
         "other": "report_author",
     }

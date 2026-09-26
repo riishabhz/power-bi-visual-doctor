@@ -24,6 +24,7 @@ CATEGORY_LABELS = {
     "refresh_failure": "Refresh failure",
     "resource_limit": "Timeout / resource limit",
     "custom_visual": "Custom visual",
+    "tenant_setting": "Tenant setting",
     "not_broken": "Not broken",
     "other": "Other",
     "untriaged": "Untriaged",
@@ -69,7 +70,7 @@ def summarise(scan: ScanResult, findings: list[Finding], review_threshold: float
     per_report: dict[str, dict[str, Any]] = {}
     for v in scan.visuals:
         rep = per_report.setdefault(v.report_name, {"name": v.report_name, "pages": {}, "broken": 0, "visuals": 0})
-        page = rep["pages"].setdefault(v.page_name, {"name": v.page_name, "url": v.page_url, "visuals": 0, "ok": 0, "findings": []})
+        page = rep["pages"].setdefault(v.page_name, {"name": v.page_name, "url": v.page_url, "hidden": v.page_hidden, "visuals": 0, "ok": 0, "findings": []})
         page["visuals"] += 1
         rep["visuals"] += 1
         if v.status == OK:

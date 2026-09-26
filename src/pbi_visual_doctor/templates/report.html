@@ -143,6 +143,7 @@
       {% for p in r.pages %}
         <div class="page-head">
           {{ p.name }}
+          {% if p.hidden %}<span class="tag plain" title="This page is hidden in the report, so it has no page tab. Use the open page link, or turn on Edit mode to see hidden tabs.">hidden page</span>{% endif %}
           {% if p.broken %}<span class="tag bad">{{ p.broken }} broken</span>{% else %}<span class="tag ok">{{ p.ok }} ok</span>{% endif %}
           {% if p.url and not p.url.startswith("file:") %}<a href="{{ p.url }}" target="_blank" rel="noopener">open page</a>{% endif %}
         </div>

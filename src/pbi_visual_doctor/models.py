@@ -29,6 +29,7 @@ class VisualRecord:
     details_text: str = ""
     aria_label: str = ""
     text_sample: str = ""
+    page_hidden: bool = False  # not in the report's page tabs, so viewers cannot click to it
 
     @property
     def is_problem(self) -> bool:

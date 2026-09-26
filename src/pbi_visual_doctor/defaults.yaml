@@ -57,7 +57,10 @@ phrases:
     - "Error fetching data"
     - "exceeded the available resources"
     - "Too many values"
+    - "Can't determine relationships"
     - "Fix this"
+    # Power BI only shows this link on a visual that failed, whatever the message.
+    - "See details"
   # Any of these marks a visual as blank (possibly broken, possibly just
   # empty for the current filters; the model decides).
   blank:

@@ -45,7 +45,7 @@ Identical failures are grouped. If a measure is renamed and breaks 23 visuals ac
 ## Quick start
 
 ```bash
-git clone https://github.com/<you>/pbi-visual-doctor
+git clone https://github.com/riishabhz/pbi-visual-doctor
 cd pbi-visual-doctor
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
@@ -58,72 +58,54 @@ The demo crawls a few bundled pages that imitate Power BI's markup (a renamed me
 
 ## Scanning your own reports
 
-### 1. Sign in once
+For a step-by-step walkthrough, including Laya setup and tuning, see the [user guide](docs/USER-GUIDE.md).
 
 ```bash
-pbi-doctor login
+pbi-doctor login     # sign in once; the browser closes by itself when you are done
+pbi-doctor scan      # scans every report in every workspace you can access
 ```
 
-A browser window opens. Sign in to Power BI (MFA included), wait for the home page, then press Enter in the terminal. The session is saved to `.auth/state.json` and reused by later headless scans. **Keep that file private**: it grants access to your account. It is in `.gitignore`.
+`login` opens a browser window. Sign in to Power BI (MFA included); once the home page loads, the session is saved to `.auth/state.json` and the window closes. Sessions expire. If a scan reports "Redirected to sign-in" or asks you to sign in again, run `pbi-doctor login` again.
 
-Sessions expire. If a scan reports "Redirected to sign-in", run `pbi-doctor login` again.
-
-### 2. List what to scan
-
-Copy `examples/targets.example.yaml` to `targets.yaml`:
-
-```yaml
-reports:
-  # Pages listed: each page is opened directly and scanned in parallel.
-  - name: Sales Overview
-    url: https://app.powerbi.com/groups/<workspace-id>/reports/<report-id>
-    pages:
-      - ReportSection1a2b3c                 # page section id, appended to the URL
-      - name: Bookings
-        url: https://app.powerbi.com/groups/<workspace-id>/reports/<report-id>/ReportSection4d5e6f
-
-  # No pages listed: the crawler clicks through the report's page tabs.
-  - name: Guest Experience
-    url: https://app.powerbi.com/groups/<workspace-id>/reports/<report-id>
-
-# Optional: scan every report in a workspace (needs PBI_ACCESS_TOKEN, see below).
-workspaces:
-  - id: <workspace-id>
-    exclude: ["Old report"]
-```
-
-**Whole workspaces.** With an access token, the tool lists every report and page through the Power BI REST API, so you do not have to maintain the list by hand:
+To scan less than everything:
 
 ```bash
-export PBI_ACCESS_TOKEN=$(az account get-access-token \
-  --resource https://analysis.windows.net/powerbi/api --query accessToken -o tsv)
+pbi-doctor scan --workspace "Sales"            # one workspace (name, part of the name, or id)
+pbi-doctor scan --report "Pipeline"            # reports whose name contains this text
+pbi-doctor scan --url "https://app.powerbi.com/groups/<workspace-id>/reports/<report-id>"
+pbi-doctor scan --list                         # print what would be scanned, then exit
+pbi-doctor scan --headed                       # show the browser while scanning
 ```
 
-The token is only used to list reports and pages. The visuals themselves are still read in the browser session from step 1.
+`--workspace`, `--report` and `--url` can be repeated. `--include-my-workspace` adds reports from My workspace. Hidden pages (usually drill-through and tooltip pages) are skipped; `--include-hidden-pages` scans them too and labels them "hidden page" in the report. For a fixed, hand-maintained list, `--targets targets.yaml` still works (see `examples/targets.example.yaml`).
 
-### 3. Scan
+**How discovery works.** `scan` opens your saved session headless on the Power BI home page and reads the access token the web app already holds, then lists workspaces, reports and pages through the Power BI REST API. The token is kept in memory only and never written to disk (set `PBI_ACCESS_TOKEN` to supply your own instead). The visuals themselves are read in the browser session. `.auth/state.json` grants access to your account: **keep it private**. It is in `.gitignore`.
+
+If `pbi-doctor` is not recognized (common with the Microsoft Store Python on Windows), use `python -m pbi_visual_doctor` instead, for example `python -m pbi_visual_doctor scan`.
+
+### Choosing a triage backend
 
 ```bash
 # Offline baseline, no model
-pbi-doctor scan --targets targets.yaml
+pbi-doctor scan
 
 # Jev (hosted by TypeSafe)
 export TYPESAFE_API_KEY=...
-pbi-doctor scan --targets targets.yaml --backend jev
+pbi-doctor scan --backend jev
 
 # Laya, running locally in-process
 pip install -e ".[laya]"
-pbi-doctor scan --targets targets.yaml --backend laya
+pbi-doctor scan --backend laya
 ```
 
-Output goes to `pbi-doctor-report/`:
+Each scan gets its own folder named after the time and backend, for example `pbi-doctor-report/2026-09-26_21-38-05_laya/`, so earlier results are kept. Pass `--out <folder>` to choose the folder yourself. Each folder contains:
 
 | File | What it is |
 | --- | --- |
 | `report.html` | The health report: totals, top fixes, root causes, owners, and every problem visual by report and page, with a filter box |
 | `findings.json` | Every triaged visual with its answers, confidence and fingerprint |
 | `findings.csv` | The same, flat, ready to load into Power BI itself |
-| `scan.json` | The raw crawl. Re-triage it without crawling again: `pbi-doctor triage --input pbi-doctor-report/scan.json --backend laya` |
+| `scan.json` | The raw crawl. Re-triage it without crawling again: `pbi-doctor triage --input pbi-doctor-report/<run>/scan.json --backend laya` (writes a new `..._laya_triage` folder) |
 
 `pbi-doctor triage` is also the cheap way to compare backends on the same scan.
 
@@ -193,7 +175,7 @@ src/pbi_visual_doctor/
   cli.py          commands: login, scan, triage, demo
   crawler.py      Playwright crawl, visual text extraction, See details capture
   detect.py       rule-based status: ok, error, blank, timeout
-  discovery.py    optional report and page listing via the Power BI REST API
+  discovery.py    workspace, report and page listing via the Power BI REST API
   triage.py       the typed questions, answer parsing, fix grouping
   backends.py     Jev, Laya (local and HTTP), rules
   report.py       aggregation and HTML, JSON, CSV output

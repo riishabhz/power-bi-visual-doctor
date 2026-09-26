@@ -12,14 +12,15 @@ from typing import Any, Callable, Optional
 from .models import BLANK, Finding, Triage, VisualRecord
 
 CATEGORIES: dict[str, str] = {
-    "missing_field": "A field, column, measure or table used by the visual was renamed, deleted or cannot be found in the semantic model",
-    "dax_error": "A DAX measure or calculation fails: syntax error, invalid function or argument, type mismatch, circular dependency or conversion error",
+    "missing_field": "The message says a field, column, measure or table doesn't exist, cannot be found or has been renamed or deleted, so the visual cannot use it",
+    "dax_error": "A DAX calculation fails while evaluating: syntax error, invalid function or argument, type mismatch such as cannot convert a value of type Text to Number, or circular dependency",
     "relationship": "Missing, inactive or ambiguous relationships between tables, many-to-many or cross-filter direction problems",
     "permissions": "The viewer lacks access: row-level security, workspace or semantic model permissions, build permission or sensitivity labels",
     "credentials_gateway": "Data source credentials expired or invalid, gateway offline or not configured, DirectQuery or live source unreachable",
     "refresh_failure": "The semantic model refresh failed or the model has not been processed, so data is missing or stale",
-    "resource_limit": "The query timed out, exceeded memory or capacity limits, or returned too many rows or data points to display",
-    "custom_visual": "A custom or third-party visual failed to load, is blocked by admin settings, not certified, or has a rendering bug",
+    "resource_limit": "The visual exceeded the available resources: the query timed out, used too much memory or capacity, or has too many rows or data points to display",
+    "custom_visual": "A custom or third-party visual from AppSource or a .pbiviz file failed to load, is not certified, or has a rendering bug",
+    "tenant_setting": "A tenant or admin setting turns this feature off for the whole organization, for example map visuals, R or Python visuals, or export are not enabled for your org; the tenant admin must enable it",
     "not_broken": "The visual works as intended: it is legitimately empty for the current filters or shows a normal informational message",
     "other": "Any other problem that does not fit the categories above",
 }

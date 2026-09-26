@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install git+https://github.com/riishabhz/pbi-visual-doctor
+      - run: pip install git+https://github.com/riishabhz/power-bi-visual-doctor
       - run: playwright install --with-deps chromium
       - name: Restore session
         run: |

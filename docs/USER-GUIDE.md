@@ -33,8 +33,8 @@ never go to a model.
 You need Python 3.10 or newer.
 
 ```bash
-git clone https://github.com/riishabhz/pbi-visual-doctor
-cd pbi-visual-doctor
+git clone https://github.com/riishabhz/power-bi-visual-doctor
+cd power-bi-visual-doctor
 pip install -e .
 playwright install chromium
 ```

@@ -45,8 +45,8 @@ Identical failures are grouped. If a measure is renamed and breaks 23 visuals ac
 ## Quick start
 
 ```bash
-git clone https://github.com/riishabhz/pbi-visual-doctor
-cd pbi-visual-doctor
+git clone https://github.com/riishabhz/power-bi-visual-doctor
+cd power-bi-visual-doctor
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
 playwright install chromium

@@ -30,14 +30,40 @@ never go to a model.
 
 ## 2. Install
 
-You need Python 3.10 or newer.
+You need Python 3.10 or newer and git. Install into a virtual environment (a
+private folder of packages for this project, `.venv`):
+
+**Windows (PowerShell)**
+
+```powershell
+git clone https://github.com/riishabhz/power-bi-visual-doctor
+cd power-bi-visual-doctor
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -e .
+python -m playwright install chromium
+```
+
+If activation fails with "running scripts is disabled on this system", allow
+scripts for the current window only, then run `.venv\Scripts\Activate.ps1` again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+**macOS / Linux**
 
 ```bash
 git clone https://github.com/riishabhz/power-bi-visual-doctor
 cd power-bi-visual-doctor
-pip install -e .
-playwright install chromium
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+python -m playwright install chromium
 ```
+
+Activate the environment again in every new terminal before running `pbi-doctor`
+(your prompt shows `(.venv)` when it is active).
 
 Try it without a Power BI account first:
 
@@ -47,9 +73,10 @@ pbi-doctor demo
 
 Open `pbi-doctor-demo/report.html`.
 
-**"pbi-doctor is not recognized"** (common with the Microsoft Store Python on
-Windows): use `python -m pbi_visual_doctor` in place of `pbi-doctor` everywhere
-in this guide, for example `python -m pbi_visual_doctor scan`.
+**"pbi-doctor is not recognized"**: the environment is not active; run the
+activate command above. Installed without a virtual environment (common with the
+Microsoft Store Python on Windows)? Use `python -m pbi_visual_doctor` in place of
+`pbi-doctor` everywhere in this guide, for example `python -m pbi_visual_doctor scan`.
 
 ## 3. Sign in once
 
@@ -144,8 +171,10 @@ machine.
 ### Install
 
 ```bash
-pip install -e ".[laya]"
+python -m pip install -e ".[laya]"
 ```
+
+Run it with the same environment active.
 
 This pulls in PyTorch and Transformers, a few GB in total. Laya is optional for
 that reason.
@@ -247,7 +276,7 @@ pbi-doctor scan --config my-config.yaml --backend laya
 | Backend | `--backend` | Needs | Notes |
 | --- | --- | --- | --- |
 | Rules | `rules` (default) | nothing | Keyword matching. Good for trying the tool; not a model. |
-| Laya, local | `laya` | `pip install -e ".[laya]"` | Free, offline, private. |
+| Laya, local | `laya` | `python -m pip install -e ".[laya]"` | Free, offline, private. |
 | Laya, server | `laya-http` | a running `laya-serve` | Share one Laya instance across machines. `LAYA_BASE_URL` (default `http://localhost:8000`). |
 | Jev | `jev` | `TYPESAFE_API_KEY` | Hosted by TypeSafe, stronger zero-shot. The error text of problem visuals leaves your machine. |
 

@@ -44,13 +44,41 @@ Identical failures are grouped. If a measure is renamed and breaks 23 visuals ac
 
 ## Quick start
 
+**Windows (PowerShell)**
+
+```powershell
+git clone https://github.com/riishabhz/power-bi-visual-doctor
+cd power-bi-visual-doctor
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -e .
+python -m playwright install chromium
+```
+
+If activation fails with "running scripts is disabled on this system", allow
+scripts for the current window only, then run `.venv\Scripts\Activate.ps1` again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+**macOS / Linux**
+
 ```bash
 git clone https://github.com/riishabhz/power-bi-visual-doctor
 cd power-bi-visual-doctor
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e .
-playwright install chromium
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+python -m playwright install chromium
+```
 
+Activate the environment again in every new terminal before running `pbi-doctor`
+(your prompt shows `(.venv)` when it is active).
+
+Then run the demo:
+
+```bash
 pbi-doctor demo
 ```
 
@@ -81,7 +109,7 @@ pbi-doctor scan --headed                       # show the browser while scanning
 
 **How discovery works.** `scan` opens your saved session headless on the Power BI home page and reads the access token the web app already holds, then lists workspaces, reports and pages through the Power BI REST API. The token is kept in memory only and never written to disk (set `PBI_ACCESS_TOKEN` to supply your own instead). The visuals themselves are read in the browser session. `.auth/state.json` grants access to your account: **keep it private**. It is in `.gitignore`.
 
-If `pbi-doctor` is not recognized (common with the Microsoft Store Python on Windows), use `python -m pbi_visual_doctor` instead, for example `python -m pbi_visual_doctor scan`.
+If `pbi-doctor` is not recognized, activate the environment first (see Quick start). Installed without one (common with the Microsoft Store Python on Windows)? Use `python -m pbi_visual_doctor` instead, for example `python -m pbi_visual_doctor scan`.
 
 ### Choosing a triage backend
 
@@ -94,7 +122,7 @@ export TYPESAFE_API_KEY=...
 pbi-doctor scan --backend jev
 
 # Laya, running locally in-process
-pip install -e ".[laya]"
+python -m pip install -e ".[laya]"
 pbi-doctor scan --backend laya
 ```
 
@@ -115,7 +143,7 @@ Each scan gets its own folder named after the time and backend, for example `pbi
 | --- | --- | --- | --- |
 | Rules | `rules` | nothing | Keyword baseline so you can try the tool offline. Not a model; do not rely on it for decisions. |
 | Jev | `jev` | `TYPESAFE_API_KEY` | Strongest zero-shot. Hosted in the US; error text leaves your machine. Pinned to `jev-1.13.0` by default (`--model` or `JEV_MODEL` to change) so results are repeatable. |
-| Laya, local | `laya` | `pip install -e ".[laya]"` | Open weights (Apache 2.0), runs on your CPU or GPU, nothing leaves your machine. Weaker zero-shot than Jev; fine-tuning on your own labelled errors is where it gets good. Uses the English checkpoint by default because Power BI error messages are English (`--model multilingual` to change). |
+| Laya, local | `laya` | `python -m pip install -e ".[laya]"` | Open weights (Apache 2.0), runs on your CPU or GPU, nothing leaves your machine. Weaker zero-shot than Jev; fine-tuning on your own labelled errors is where it gets good. Uses the English checkpoint by default because Power BI error messages are English (`--model multilingual` to change). |
 | Laya, server | `laya-http` | a running `laya-serve` | Same as above behind Laya's Jev-compatible HTTP server. `LAYA_BASE_URL` (default `http://localhost:8000`), optional `LAYA_API_KEY`. |
 
 Jev and laya-serve use the same `POST /v1/systemone` request format, so the same code talks to both.
@@ -161,9 +189,9 @@ If a scan finds no visuals on pages that clearly have them, the selectors are th
 ## Development
 
 ```bash
-pip install -e ".[dev]"
-playwright install chromium
-pytest
+python -m pip install -e ".[dev]"
+python -m playwright install chromium
+python -m pytest
 ```
 
 The end-to-end test crawls the bundled demo pages with a real browser.
